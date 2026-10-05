@@ -139,4 +139,141 @@ describe("calculateProfit", () => {
     expect(result.maximumAdvertisingCost).toBe(0);
     expect(result.breakEvenRoas).toBeNull();
   });
+
+  it("calculates professional fees from independent bases and keeps subsidy separate", () => {
+    const result = calculateProfit({
+      ...DEFAULT_PROFIT_INPUT,
+      calculationMode: "professional",
+      salesChannel: "creator",
+      itemPrice: 100,
+      discount: 10,
+      buyerShipping: 5,
+      platformSubsidy: 3,
+      productCost: 30,
+      fulfillmentCost: 8,
+      packagingCost: 2,
+      advertisingCost: 10,
+      insuranceCost: 1,
+      otherFixedCost: 4,
+      platformFeeRate: 10,
+      platformFeeFixed: 1,
+      platformFeeBase: "item-amount",
+      paymentFeeRate: 2,
+      paymentFixedFee: 0.3,
+      paymentFeeBase: "buyer-paid",
+      creatorCommissionRate: 5,
+      creatorCommissionFixed: 2,
+      creatorCommissionBase: "seller-settlement",
+      taxRate: 1,
+      taxFeeBase: "seller-settlement",
+      returnRate: 20,
+      returnShippingCost: 6,
+      returnHandlingCost: 2,
+      returnValueLossRate: 10,
+      nonRefundableFeeRate: 50,
+      monthlyPlatformCost: 100,
+      monthlyOperatingCost: 50,
+      monthlyOrders: 100,
+    });
+
+    expect(result.itemAmount).toBe(90);
+    expect(result.buyerPaid).toBe(95);
+    expect(result.sellerSettlement).toBe(98);
+    expect(result.platformFee).toBeCloseTo(10, 10);
+    expect(result.paymentFee).toBeCloseTo(2.2, 10);
+    expect(result.creatorCommission).toBeCloseTo(6.9, 10);
+    expect(result.transactionFees).toBeCloseTo(19.1, 10);
+    expect(result.taxAllowance).toBeCloseTo(0.98, 10);
+    expect(result.singleReturnLoss).toBeCloseTo(20.55, 10);
+    expect(result.expectedReturnLoss).toBeCloseTo(4.11, 10);
+    expect(result.recurringCostAllocation).toBeCloseTo(1.5, 10);
+    expect(result.totalCosts).toBeCloseTo(80.69, 10);
+    expect(result.profit).toBeCloseTo(17.31, 10);
+    expect(result.monthlyProfit).toBeCloseTo(1731, 10);
+  });
+
+  it("ignores saved creator commission outside the creator channel", () => {
+    const result = calculateProfit({
+      ...DEFAULT_PROFIT_INPUT,
+      calculationMode: "professional",
+      salesChannel: "organic",
+      creatorCommissionRate: 40,
+      creatorCommissionFixed: 20,
+    });
+
+    expect(result.creatorCommission).toBe(0);
+    expect(result.totalVariableRate).not.toBeGreaterThanOrEqual(40);
+  });
+
+  it("makes expected after-sales loss zero when no returns are expected", () => {
+    const result = calculateProfit({
+      ...DEFAULT_PROFIT_INPUT,
+      calculationMode: "professional",
+      returnRate: 0,
+      returnShippingCost: 100,
+      returnHandlingCost: 100,
+      returnValueLossRate: 100,
+      nonRefundableFeeRate: 100,
+    });
+
+    expect(result.singleReturnLoss).toBeGreaterThan(0);
+    expect(result.expectedReturnLoss).toBe(0);
+  });
+
+  it("withholds reverse metrics when monthly costs cannot be allocated", () => {
+    const result = calculateProfit({
+      ...DEFAULT_PROFIT_INPUT,
+      calculationMode: "professional",
+      monthlyOrders: 0,
+      monthlyPlatformCost: 100,
+      monthlyOperatingCost: 200,
+    });
+
+    expect(result.recurringCostAllocation).toBeNull();
+    expect(result.breakEvenItemPrice).toBeNull();
+    expect(result.targetItemPrice).toBeNull();
+    expect(result.maximumAdvertisingCost).toBeNull();
+    expect(result.breakEvenRoas).toBeNull();
+    expect(result.monthlyProfit).toBe(-300);
+    expect(result.validationMessage).toContain("预计月订单必须大于 0");
+  });
+
+  it("round-trips a professional mixed-base target price through the forward model", () => {
+    const result = calculateProfit({
+      ...DEFAULT_PROFIT_INPUT,
+      calculationMode: "professional",
+      salesChannel: "creator",
+      buyerShipping: 6,
+      discount: 4,
+      platformSubsidy: 2,
+      platformFeeRate: 8,
+      platformFeeFixed: 0.6,
+      platformFeeBase: "item-amount",
+      paymentFeeRate: 1.2,
+      paymentFixedFee: 0.3,
+      paymentFeeBase: "buyer-paid",
+      creatorCommissionRate: 12,
+      creatorCommissionFixed: 1,
+      creatorCommissionBase: "seller-settlement",
+      taxRate: 1,
+      returnRate: 18,
+      returnShippingCost: 8,
+      returnHandlingCost: 3,
+      returnValueLossRate: 12,
+      nonRefundableFeeRate: 70,
+      monthlyPlatformCost: 300,
+      monthlyOperatingCost: 700,
+      monthlyOrders: 500,
+      targetMarginRate: 25,
+    });
+
+    expect(result.targetItemPrice).not.toBeNull();
+    const roundTrip = calculateProfit({
+      ...result.input,
+      itemPrice: result.targetItemPrice ?? 0,
+    });
+
+    expect(roundTrip.profitMargin).toBeCloseTo(25, 8);
+    expect(Math.abs(roundTrip.profit - roundTrip.sellerSettlement * 0.25)).toBeLessThan(0.01);
+  });
 });

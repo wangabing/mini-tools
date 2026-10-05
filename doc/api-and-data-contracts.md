@@ -1,7 +1,7 @@
 # 接口与数据契约文档
 
-> 版本：1.3  
-> 更新日期：2026-10-03
+> 版本：1.5
+> 更新日期：2026-10-04
 
 ## 1. 当前接口状态
 
@@ -30,33 +30,65 @@ calculateProfit(input: ProfitInput): ProfitResult
 normalizeProfitInput(input: ProfitInput): ProfitInput
 ```
 
-`ProfitInput` 金额字段使用当前界面币种，费率字段使用百分数而不是小数，例如 `15` 表示 15%。
+`ProfitInput` 金额字段在当前国内版统一使用人民币 CNY，费率字段使用百分数而不是小数，例如 `15` 表示 15%。
 
 主要输入：
 
 ```ts
+type CalculationMode = "quick" | "professional"
+type SalesChannel = "organic" | "advertising" | "creator"
+type FeeBasis = "item-amount" | "buyer-paid" | "seller-settlement"
+
 interface ProfitInput {
+  calculationMode: CalculationMode
+  salesChannel: SalesChannel
   itemPrice: number
   buyerShipping: number
   discount: number
+  platformSubsidy: number
   productCost: number
   fulfillmentCost: number
   packagingCost: number
   advertisingCost: number
+  insuranceCost: number
   otherFixedCost: number
   platformFeeRate: number
+  platformFeeFixed: number
+  platformFeeBase: FeeBasis
   paymentFeeRate: number
   paymentFixedFee: number
+  paymentFeeBase: FeeBasis
+  creatorCommissionRate: number
+  creatorCommissionFixed: number
+  creatorCommissionBase: FeeBasis
   taxRate: number
+  taxFeeBase: FeeBasis
   refundLossRate: number
+  returnRate: number
+  returnShippingCost: number
+  returnHandlingCost: number
+  returnValueLossRate: number
+  nonRefundableFeeRate: number
   targetMarginRate: number
   monthlyOrders: number
+  monthlyPlatformCost: number
+  monthlyOperatingCost: number
 }
 ```
 
-主要输出包括 `grossRevenue`、`totalCosts`、`profit`、`profitMargin`、`roi`、`breakEvenItemPrice`、`targetItemPrice`、`maximumAdvertisingCost`、`breakEvenRoas`、`monthlyProfit` 和 `costBreakdown`。
+数字更新函数使用映射类型 `ProfitNumericInputKey`，字符串枚举字段使用独立 setter，避免把数值错误写入核算模式、渠道或计费基数。
 
-当费率组合无法反推时，对应字段返回 `null`，并通过 `validationMessage` 返回具体原因。输入负数、非有限数和非整数月订单会被规范化。
+主要输出包括 `grossRevenue`、`itemAmount`、`buyerPaid`、`sellerSettlement`、`transactionFees`、`expectedReturnLoss`、`recurringCostAllocation`、`totalCosts`、`profit`、`profitMargin`、`roi`、`breakEvenItemPrice`、`targetItemPrice`、`maximumAdvertisingCost`、`breakEvenRoas`、`monthlyProfit` 和 `costBreakdown`。
+
+快速模式保留单一订单收入基数和闭式反推公式。专业模式按各自基数计算平台、支付、达人和税费，按退货概率计算预期售后损失，并使用同一正向模型进行有边界的二分反推。当费率组合无法反推，或月成本因订单量为 0 无法分摊时，对应字段返回 `null`，并通过 `validationMessage` 返回具体原因。输入负数、非有限数和非整数月订单会被规范化。
+
+界面使用 `src/domain/profit/readiness.ts` 的纯函数评估常见经营项目覆盖情况：
+
+```ts
+assessCalculationReadiness(input: ProfitInput, options: ReadinessOptions): CalculationReadiness
+```
+
+准备度结果包含覆盖项数量、建议确认项和平台费是否仍待核对。该结果不改变利润公式，也不把零值视为计算错误。
 
 ## 4. 费率预设接口
 
@@ -75,6 +107,15 @@ resolvePreset(platformId: PlatformId, categoryId: CategoryId): ResolvedPreset
 - `global`：使用全局通用预设。
 
 每条非通用 `FeePreset` 必须包含市场、来源 URL、来源访问属性、已知生效日期、复核日期、版本、核验状态、核验提示和未覆盖规则。`sourceAccess` 取值为 `public`、`login-required` 或 `contract-only`；无法公开核验的 0 费率必须设置 `verificationRequired: true`。
+
+专业字段模板实现于 `src/data/professional-templates.ts`：
+
+```ts
+getProfessionalTemplate(platformId: PlatformId): ProfessionalTemplate
+isProfessionalTemplateReviewDue(template: ProfessionalTemplate, asOf?: Date): boolean
+```
+
+`ProfessionalTemplate` 包含平台/支付/达人字段名、四类建议计费基数、支持渠道、核对清单、版本、复核日期、下次复核日期和官方来源。首批覆盖淘宝、天猫、京东、拼多多、抖音和快手；其他平台使用通用字段，但继承当前平台的来源入口。模板不包含任何数字费率字段。
 
 ## 5. 平台指南数据
 

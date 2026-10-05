@@ -1,4 +1,4 @@
-import type { ChangeEvent, ReactNode } from "react";
+import { useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
 
 interface NumberFieldProps {
   id: string;
@@ -27,9 +27,20 @@ export function NumberField({
   step = 0.01,
   testId,
 }: NumberFieldProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    setDraft(event.target.value);
     const nextValue = event.target.valueAsNumber;
+    if (Number.isFinite(nextValue)) {
+      onChange(nextValue);
+    }
+  }
+
+  function handleBlur(event: FocusEvent<HTMLInputElement>) {
+    const nextValue = event.currentTarget.valueAsNumber;
     onChange(Number.isFinite(nextValue) ? nextValue : 0);
+    setDraft(null);
   }
 
   return (
@@ -46,8 +57,10 @@ export function NumberField({
           min={min}
           max={max}
           step={step}
-          value={value}
+          value={draft ?? String(value)}
+          onFocus={() => setDraft(String(value))}
           onChange={handleChange}
+          onBlur={handleBlur}
         />
         {suffix ? <span className="number-field__affix">{suffix}</span> : null}
       </span>

@@ -13,7 +13,7 @@ const structuredData = {
   operatingSystem: "Web",
   inLanguage: "zh-CN",
   isAccessibleForFree: true,
-  description: "核算电商订单利润、利润率、ROI、保本售价、目标售价和广告投放边界。",
+  description: "估算电商订单贡献利润、贡献利润率、保本售价、目标售价和广告投放边界。",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -34,7 +34,7 @@ export default function HomePage() {
           <h1>电商利润计算器</h1>
         </div>
         <div className="intro-support">
-          <p>把售价与真实成本放在同一张账上，得到可以直接用于定价的答案。</p>
+          <p>把售价与当前成本放在同一张账上，快速查看定价与投放边界。</p>
           <span><ShieldCheck size={15} aria-hidden="true" /> 经营数据仅在浏览器内计算</span>
         </div>
       </section>

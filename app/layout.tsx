@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s | 利衡",
   },
   description:
-    "免费核算单笔电商订单的利润、利润率、ROI、保本售价、广告空间和目标售价。支持平台与商品类目参考费率。",
+    "免费估算电商订单贡献利润、贡献利润率、保本售价、广告空间和目标售价，并提示尚待确认的经营成本。",
   applicationName: "利衡电商利润计算器",
   alternates: { canonical: siteUrl },
   openGraph: {
@@ -23,13 +23,13 @@ export const metadata: Metadata = {
     locale: "zh_CN",
     siteName: "利衡",
     title: "电商利润计算器 | 利衡",
-    description: "用简单输入，看清一笔订单真正留下的利润。",
+    description: "用简单输入，估算一笔订单的贡献利润与经营边界。",
     url: siteUrl,
   },
   twitter: {
     card: "summary_large_image",
     title: "电商利润计算器 | 利衡",
-    description: "用简单输入，看清一笔订单真正留下的利润。",
+    description: "用简单输入，估算一笔订单的贡献利润与经营边界。",
   },
 };
 
