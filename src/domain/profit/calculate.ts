@@ -7,6 +7,8 @@ import type {
   SalesChannel,
 } from "./types";
 
+export const PROFIT_MODEL_VERSION = "2026.10-shipped-v2";
+
 export const DEFAULT_PROFIT_INPUT: ProfitInput = {
   calculationMode: "quick",
   salesChannel: "organic",
@@ -92,7 +94,7 @@ export function normalizeProfitInput(input: ProfitInput): ProfitInput {
   }
 
   for (const key of RATE_KEYS) {
-    normalized[key] = nonNegative(input[key]);
+    normalized[key] = Math.min(100, nonNegative(input[key]));
   }
 
   normalized.monthlyOrders = Math.floor(nonNegative(input.monthlyOrders));
@@ -101,9 +103,23 @@ export function normalizeProfitInput(input: ProfitInput): ProfitInput {
 
 export function calculateProfit(rawInput: ProfitInput): ProfitResult {
   const input = normalizeProfitInput(rawInput);
-  return input.calculationMode === "professional"
+  const result = input.calculationMode === "professional"
     ? calculateProfessionalProfit(input)
     : calculateQuickProfit(input);
+  const activeRates = RATE_KEYS.filter((key) => input.calculationMode === "quick"
+    ? !["returnRate", "returnValueLossRate", "nonRefundableFeeRate", "creatorCommissionRate"].includes(key)
+    : key !== "refundLossRate" && (key !== "creatorCommissionRate" || input.salesChannel === "creator"));
+  if (activeRates.some((key) => !Number.isFinite(rawInput[key]) || rawInput[key] < 0 || rawInput[key] > 100)) {
+    return {
+      ...result,
+      validationMessage: "费率、退货率与损失比例须在 0%—100% 之间，请修正输入后再使用定价与投放指标。",
+      breakEvenItemPrice: null,
+      targetItemPrice: null,
+      maximumAdvertisingCost: null,
+      breakEvenRoas: null,
+    };
+  }
+  return result;
 }
 
 function calculateQuickProfit(input: ProfitInput): ProfitResult {
@@ -175,6 +191,8 @@ function calculateQuickProfit(input: ProfitInput): ProfitResult {
     itemAmount: Math.max(0, input.itemPrice - input.discount),
     buyerPaid: grossRevenue,
     sellerSettlement: grossRevenue,
+    expectedRevenue: grossRevenue,
+    contributionBeforeOverhead: profit,
     platformFee,
     paymentFee,
     creatorCommission: 0,
@@ -210,6 +228,8 @@ interface ProfessionalEvaluation {
   itemAmount: number;
   buyerPaid: number;
   sellerSettlement: number;
+  expectedRevenue: number;
+  expectedProductCost: number;
   platformPercentageFee: number;
   paymentPercentageFee: number;
   creatorPercentageFee: number;
@@ -246,11 +266,11 @@ function calculateProfessionalProfit(input: ProfitInput): ProfitResult {
 
   const nonAdvertisingCosts = evaluation.totalCosts - input.advertisingCost;
   const maximumAdvertisingCost = hasAllocation
-    ? Math.max(0, evaluation.sellerSettlement - nonAdvertisingCosts)
+    ? Math.max(0, evaluation.expectedRevenue - nonAdvertisingCosts)
     : null;
   const breakEvenRoas =
     maximumAdvertisingCost !== null && maximumAdvertisingCost > 0
-      ? evaluation.sellerSettlement / maximumAdvertisingCost
+      ? evaluation.expectedRevenue / maximumAdvertisingCost
       : null;
 
   const totalVariableRate =
@@ -260,7 +280,7 @@ function calculateProfessionalProfit(input: ProfitInput): ProfitResult {
     (input.salesChannel === "creator" ? input.creatorCommissionRate : 0);
 
   const costBreakdown = [
-    { id: "product" as const, label: "商品", value: input.productCost },
+    { id: "product" as const, label: "成交商品成本", value: evaluation.expectedProductCost },
     { id: "fulfillment" as const, label: "履约", value: input.fulfillmentCost },
     { id: "advertising" as const, label: "广告", value: input.advertisingCost },
     { id: "fees" as const, label: "交易费用", value: evaluation.transactionFees },
@@ -297,10 +317,12 @@ function calculateProfessionalProfit(input: ProfitInput): ProfitResult {
 
   return {
     input,
-    grossRevenue: evaluation.sellerSettlement,
+    grossRevenue: evaluation.expectedRevenue,
     itemAmount: evaluation.itemAmount,
     buyerPaid: evaluation.buyerPaid,
     sellerSettlement: evaluation.sellerSettlement,
+    expectedRevenue: evaluation.expectedRevenue,
+    contributionBeforeOverhead: evaluation.profit + (evaluation.recurringCostAllocation ?? 0),
     platformFee: evaluation.platformFee,
     paymentFee: evaluation.paymentFee,
     creatorCommission: evaluation.creatorCommission,
@@ -341,27 +363,34 @@ function evaluateProfessionalOrder(input: ProfitInput): ProfessionalEvaluation {
     "seller-settlement": sellerSettlement,
   };
 
-  const platformPercentageFee = bases[input.platformFeeBase] * (input.platformFeeRate / 100);
-  const paymentPercentageFee = bases[input.paymentFeeBase] * (input.paymentFeeRate / 100);
-  const creatorPercentageFee =
-    input.salesChannel === "creator"
-      ? bases[input.creatorCommissionBase] * (input.creatorCommissionRate / 100)
-      : 0;
-  const platformFee = platformPercentageFee + input.platformFeeFixed;
-  const paymentFee = paymentPercentageFee + input.paymentFixedFee;
-  const creatorCommission =
-    input.salesChannel === "creator"
-      ? creatorPercentageFee + input.creatorCommissionFixed
-      : 0;
+  // Every input is per shipped order. Full returns reverse settlement and
+  // recover undamaged stock; spent logistics/acquisition costs remain incurred.
+  const returnProbability = input.returnRate / 100;
+  const keptProbability = 1 - returnProbability;
+  const feeRetention = keptProbability + returnProbability * input.nonRefundableFeeRate / 100;
+  const expectedRevenue = sellerSettlement * keptProbability;
+  const expectedProductCost = input.productCost * keptProbability;
+  const rawPlatformPercentage = bases[input.platformFeeBase] * input.platformFeeRate / 100;
+  const rawPaymentPercentage = bases[input.paymentFeeBase] * input.paymentFeeRate / 100;
+  const rawCreatorPercentage = input.salesChannel === "creator"
+    ? bases[input.creatorCommissionBase] * input.creatorCommissionRate / 100 : 0;
+  const rawTransactionFees = rawPlatformPercentage + input.platformFeeFixed
+    + rawPaymentPercentage + input.paymentFixedFee
+    + (input.salesChannel === "creator" ? rawCreatorPercentage + input.creatorCommissionFixed : 0);
+  const platformPercentageFee = rawPlatformPercentage * feeRetention;
+  const paymentPercentageFee = rawPaymentPercentage * feeRetention;
+  const creatorPercentageFee = rawCreatorPercentage * feeRetention;
+  const platformFee = platformPercentageFee + input.platformFeeFixed * feeRetention;
+  const paymentFee = paymentPercentageFee + input.paymentFixedFee * feeRetention;
+  const creatorCommission = input.salesChannel === "creator"
+    ? creatorPercentageFee + input.creatorCommissionFixed * feeRetention : 0;
   const transactionFees = platformFee + paymentFee + creatorCommission;
-  const taxAllowance = bases[input.taxFeeBase] * (input.taxRate / 100);
-
-  const singleReturnLoss =
-    input.returnShippingCost +
-    input.returnHandlingCost +
-    input.productCost * (input.returnValueLossRate / 100) +
-    transactionFees * (input.nonRefundableFeeRate / 100);
-  const expectedReturnLoss = input.returnRate * singleReturnLoss / 100;
+  const taxAllowance = bases[input.taxFeeBase] * input.taxRate / 100 * keptProbability;
+  const returnHandlingLoss = input.returnShippingCost + input.returnHandlingCost
+    + input.productCost * input.returnValueLossRate / 100;
+  const singleReturnLoss = returnHandlingLoss + rawTransactionFees * input.nonRefundableFeeRate / 100;
+  // Nonrefundable fees are already included above. Never deduct them twice.
+  const expectedReturnLoss = returnProbability * returnHandlingLoss;
 
   const monthlyRecurringCosts = input.monthlyPlatformCost + input.monthlyOperatingCost;
   const recurringCostAllocation =
@@ -372,7 +401,7 @@ function evaluateProfessionalOrder(input: ProfitInput): ProfessionalEvaluation {
         : 0;
 
   const directOrderCosts =
-    input.productCost +
+    expectedProductCost +
     input.fulfillmentCost +
     input.packagingCost +
     input.advertisingCost +
@@ -386,17 +415,19 @@ function evaluateProfessionalOrder(input: ProfitInput): ProfessionalEvaluation {
     expectedReturnLoss;
   const fixedCosts =
     directOrderCosts +
-    input.platformFeeFixed +
-    input.paymentFixedFee +
-    (input.salesChannel === "creator" ? input.creatorCommissionFixed : 0) +
+    input.platformFeeFixed * feeRetention +
+    input.paymentFixedFee * feeRetention +
+    (input.salesChannel === "creator" ? input.creatorCommissionFixed * feeRetention : 0) +
     (recurringCostAllocation ?? 0);
   const totalCosts = fixedCosts + percentageCosts;
-  const profit = sellerSettlement - totalCosts;
+  const profit = expectedRevenue - totalCosts;
 
   return {
     itemAmount,
     buyerPaid,
     sellerSettlement,
+    expectedRevenue,
+    expectedProductCost,
     platformPercentageFee,
     paymentPercentageFee,
     creatorPercentageFee,
@@ -413,7 +444,7 @@ function evaluateProfessionalOrder(input: ProfitInput): ProfessionalEvaluation {
     fixedCosts,
     totalCosts,
     profit,
-    profitMargin: sellerSettlement > 0 ? (profit / sellerSettlement) * 100 : 0,
+    profitMargin: expectedRevenue > 0 ? (profit / expectedRevenue) * 100 : 0,
     roi: totalCosts > 0 ? (profit / totalCosts) * 100 : null,
   };
 }

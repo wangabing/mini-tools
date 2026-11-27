@@ -28,6 +28,7 @@ export function NumberField({
   testId,
 }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
+  const invalid = value < min || value > max;
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     setDraft(event.target.value);
@@ -51,6 +52,8 @@ export function NumberField({
         <input
           id={id}
           aria-label={label}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? `${id}-error` : undefined}
           data-testid={testId}
           type="number"
           inputMode="decimal"
@@ -65,6 +68,7 @@ export function NumberField({
         {suffix ? <span className="number-field__affix">{suffix}</span> : null}
       </span>
       {hint ? <small>{hint}</small> : null}
+      {invalid ? <small id={`${id}-error`} className="field-error">请输入 {min}—{max} 之间的数值</small> : null}
     </label>
   );
 }

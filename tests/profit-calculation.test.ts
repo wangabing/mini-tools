@@ -17,6 +17,7 @@ describe("calculateProfit", () => {
       monthlyOrders: 20,
     });
 
+
     expect(result.grossRevenue).toBe(100);
     expect(result.percentageCosts).toBe(15);
     expect(result.totalCosts).toBeCloseTo(67.3, 10);
@@ -179,17 +180,17 @@ describe("calculateProfit", () => {
     expect(result.itemAmount).toBe(90);
     expect(result.buyerPaid).toBe(95);
     expect(result.sellerSettlement).toBe(98);
-    expect(result.platformFee).toBeCloseTo(10, 10);
-    expect(result.paymentFee).toBeCloseTo(2.2, 10);
-    expect(result.creatorCommission).toBeCloseTo(6.9, 10);
-    expect(result.transactionFees).toBeCloseTo(19.1, 10);
-    expect(result.taxAllowance).toBeCloseTo(0.98, 10);
+    expect(result.platformFee).toBeCloseTo(9, 10);
+    expect(result.paymentFee).toBeCloseTo(1.98, 10);
+    expect(result.creatorCommission).toBeCloseTo(6.21, 10);
+    expect(result.transactionFees).toBeCloseTo(17.19, 10);
+    expect(result.taxAllowance).toBeCloseTo(0.784, 10);
     expect(result.singleReturnLoss).toBeCloseTo(20.55, 10);
-    expect(result.expectedReturnLoss).toBeCloseTo(4.11, 10);
+    expect(result.expectedReturnLoss).toBeCloseTo(2.2, 10);
     expect(result.recurringCostAllocation).toBeCloseTo(1.5, 10);
-    expect(result.totalCosts).toBeCloseTo(80.69, 10);
-    expect(result.profit).toBeCloseTo(17.31, 10);
-    expect(result.monthlyProfit).toBeCloseTo(1731, 10);
+    expect(result.totalCosts).toBeCloseTo(70.674, 10);
+    expect(result.profit).toBeCloseTo(7.726, 10);
+    expect(result.monthlyProfit).toBeCloseTo(772.6, 10);
   });
 
   it("ignores saved creator commission outside the creator channel", () => {
@@ -274,6 +275,6 @@ describe("calculateProfit", () => {
     });
 
     expect(roundTrip.profitMargin).toBeCloseTo(25, 8);
-    expect(Math.abs(roundTrip.profit - roundTrip.sellerSettlement * 0.25)).toBeLessThan(0.01);
+    expect(Math.abs(roundTrip.profit - roundTrip.expectedRevenue * 0.25)).toBeLessThan(0.01);
   });
 });

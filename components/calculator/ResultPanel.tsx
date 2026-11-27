@@ -2,13 +2,16 @@ import { AlertTriangle, CheckCircle2, Gauge, TrendingDown } from "lucide-react";
 import { ContributionScale } from "./ContributionScale";
 import { Metric } from "@/components/ui/Metric";
 import { formatMoney, formatPercent, formatRatio } from "@/src/domain/profit/format";
-import type { CalculationReadiness } from "@/src/domain/profit/readiness";
+import type { CalculationReadiness, ReadinessCheckId } from "@/src/domain/profit/readiness";
+import { ZERO_COST_IDS } from "@/src/domain/profit/scenarios";
 import type { CurrencyCode, ProfitResult } from "@/src/domain/profit/types";
 
 interface ResultPanelProps {
   result: ProfitResult;
   currency: CurrencyCode;
   readiness: CalculationReadiness;
+  isExample?: boolean;
+  onAcknowledge?: (id: ReadinessCheckId) => void;
 }
 
 const BREAKDOWN_CLASS: Record<string, string> = {
@@ -22,20 +25,23 @@ const BREAKDOWN_CLASS: Record<string, string> = {
   other: "cost-other",
 };
 
-export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
+export function ResultPanel({ result, currency, readiness, isExample = false, onAcknowledge }: ResultPanelProps) {
+  const professional = result.input.calculationMode === "professional";
+  const qualified = isExample || readiness.needsFeeVerification || Boolean(result.validationMessage);
   const hasAllocationIssue =
     result.input.calculationMode === "professional" && result.recurringCostAllocation === null;
-  const tone = readiness.needsFeeVerification
+  const tone = qualified
     ? "warning"
     : hasAllocationIssue
       ? "warning"
     : result.profit > 0 ? "positive" : result.profit < 0 ? "negative" : "neutral";
-  const statusText = readiness.needsFeeVerification
+  const statusText = isExample ? "示例结果" : readiness.needsFeeVerification
     ? "费用待核对"
     : hasAllocationIssue
       ? "订单量待补充"
+    : result.validationMessage ? "输入需检查"
     : result.profit > 0 ? "当前盈利" : result.profit < 0 ? "当前亏损" : "刚好持平";
-  const StatusIcon = readiness.needsFeeVerification || hasAllocationIssue
+  const StatusIcon = qualified || hasAllocationIssue
     ? AlertTriangle
     : result.profit > 0 ? CheckCircle2 : result.profit < 0 ? TrendingDown : Gauge;
   const coveragePercent = (readiness.coveredCount / readiness.totalCount) * 100;
@@ -55,15 +61,15 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
 
       <section className="profit-primary">
         <span>
-          {hasAllocationIssue
+          {professional && hasAllocationIssue
             ? "订单贡献利润（未含月费分摊）"
-            : readiness.needsFeeVerification
-              ? "订单贡献利润（预览）"
-              : "订单贡献利润"}
+            : professional
+            ? `每笔发出订单${result.monthlyRecurringCosts > 0 && !hasAllocationIssue ? "分摊后收益" : "预计贡献"}${isExample ? "（示例）" : readiness.needsFeeVerification ? "（预览）" : ""}`
+            : readiness.needsFeeVerification ? "订单贡献利润（预览）" : isExample ? "订单贡献利润" : "订单贡献利润"}
         </span>
         <strong data-testid="profit-value">{formatMoney(result.profit, currency)}</strong>
         <p>
-          按当前已填写项目，每完成一笔订单预计{result.profit >= 0 ? "留下" : "损失"}{" "}
+          按当前已填写项目，每{professional ? "发出" : "完成"}一笔订单预计{result.profit >= 0 ? "留下" : "损失"}{" "}
           <b>{formatMoney(Math.abs(result.profit), currency)}</b>
         </p>
       </section>
@@ -87,7 +93,7 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
 
       <div className="primary-metrics">
         <Metric
-          label="贡献利润率"
+          label={professional ? "预计收益率" : "贡献利润率"}
           value={formatPercent(result.profitMargin)}
           tone={result.profitMargin >= 0 ? "positive" : "negative"}
         />
@@ -97,7 +103,7 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
           tone={result.roi === null ? "default" : result.roi >= 0 ? "positive" : "negative"}
         />
         <Metric
-          label={`预计月贡献（${result.input.monthlyOrders} 单）`}
+          label={professional ? `预计月收益（${result.input.monthlyOrders} 笔发出）` : `预计月贡献（${result.input.monthlyOrders} 单）`}
           value={formatMoney(result.monthlyProfit, currency)}
           tone={result.monthlyProfit >= 0 ? "positive" : "negative"}
         />
@@ -114,9 +120,14 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
           </div>
           <dl>
             <div>
-              <dt>商家结算收入</dt>
+              <dt>退货前结算收入</dt>
               <dd>{formatMoney(result.sellerSettlement, currency)}</dd>
               <small>买家实付 {formatMoney(result.buyerPaid, currency)} + 平台补贴 {formatMoney(result.input.platformSubsidy, currency)}</small>
+            </div>
+            <div>
+              <dt>退货后预计收入</dt>
+              <dd>{formatMoney(result.expectedRevenue, currency)}</dd>
+              <small>全额退货撤回实付与补贴，完好货品回收</small>
             </div>
             <div>
               <dt>交易费用</dt>
@@ -127,9 +138,14 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
               </small>
             </div>
             <div>
-              <dt>预期售后损失</dt>
+              <dt>退货处置损失</dt>
               <dd>{formatMoney(result.expectedReturnLoss, currency)}</dd>
-              <small>退货率 {result.input.returnRate.toFixed(1)}% · 单次损失 {formatMoney(result.singleReturnLoss, currency)}</small>
+              <small>退货率 {result.input.returnRate.toFixed(1)}% · 逆向物流、处理及货损；不退交易费已计入交易费用</small>
+            </div>
+            <div>
+              <dt>分摊前订单贡献</dt>
+              <dd>{formatMoney(result.contributionBeforeOverhead, currency)}</dd>
+              <small>覆盖订单支出后，尚未扣除月度固定成本</small>
             </div>
             <div>
               <dt>单笔月费分摊</dt>
@@ -144,7 +160,7 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
         <div className="completeness__heading">
           <div>
             <span id="completeness-title">核算完整度</span>
-            <small>按常见经营项目检查</small>
+            <small>仅表示已核对项目，不是准确度评分</small>
           </div>
           <strong>{readiness.coveredCount} / {readiness.totalCount} 项</strong>
         </div>
@@ -166,6 +182,12 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
         ) : (
           <p>常见经营项目已覆盖，仍请以实际账单为准。</p>
         )}
+        {onAcknowledge ? <div className="zero-cost-checks">
+          {readiness.checks.filter((check) => !check.covered && ZERO_COST_IDS.includes(check.id)).map((check) => (
+            <button type="button" key={check.id} onClick={() => onAcknowledge(check.id)}>确认无{check.label}费用</button>
+          ))}
+          {readiness.checks.filter((check) => check.acknowledged).map((check) => <small key={check.id}>已确认：{check.label}为零</small>)}
+        </div> : null}
       </section>
 
       <ContributionScale result={result} />
@@ -176,24 +198,24 @@ export function ResultPanel({ result, currency, readiness }: ResultPanelProps) {
             <p className="panel-kicker">定价与投放边界</p>
             <h3 id="decision-title">定价与投放边界</h3>
           </div>
-          <small>按当前成本与费率</small>
+          <small>{qualified ? "仅为预览，请先核对输入与费用" : "按当前成本与费率"}</small>
         </div>
         <div className="decision-grid">
-          <Metric label="保本售价" value={formatMoney(result.breakEvenItemPrice, currency)} />
+          <Metric label={`保本售价${qualified ? "（预览）" : ""}`} value={formatMoney(result.breakEvenItemPrice, currency)} />
           <Metric
-            label={`目标售价 · ${result.input.targetMarginRate.toFixed(0)}%`}
+            label={`目标售价 · ${result.input.targetMarginRate.toFixed(0)}%${qualified ? "（预览）" : ""}`}
             value={formatMoney(result.targetItemPrice, currency)}
             tone="accent"
           />
           <Metric
-            label="最大广告成本"
+            label={`最大广告成本${qualified ? "（预览）" : ""}`}
             value={formatMoney(result.maximumAdvertisingCost, currency)}
             detail="利润降为 0 前的单笔上限"
           />
           <Metric
-            label="盈亏平衡 ROAS"
+            label={`盈亏平衡 ROAS${qualified ? "（预览）" : ""}`}
             value={formatRatio(result.breakEvenRoas)}
-            detail="低于该值将进入亏损"
+            detail={professional ? "退货后预计收入 ÷ 广告上限，与广告后台GMV口径不同" : "订单收入 ÷ 广告上限"}
           />
         </div>
       </section>

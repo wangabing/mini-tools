@@ -2,8 +2,10 @@
 
 import { ChevronDown, ExternalLink, RotateCcw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { ResultPanel } from "./ResultPanel";
+import { ScenarioWorkspace } from "./ScenarioWorkspace";
+import { PlatformHandoff } from "./PlatformHandoff";
 import { NumberField } from "@/components/ui/NumberField";
 import {
   getCategories,
@@ -19,7 +21,8 @@ import {
 } from "@/src/data/professional-templates";
 import { calculateProfit, DEFAULT_PROFIT_INPUT } from "@/src/domain/profit/calculate";
 import { CURRENCY_SYMBOLS } from "@/src/domain/profit/format";
-import { assessCalculationReadiness } from "@/src/domain/profit/readiness";
+import { assessCalculationReadiness, type ReadinessCheckId } from "@/src/domain/profit/readiness";
+import { isScenarioCurrent, type SavedScenario } from "@/src/domain/profit/scenarios";
 import type {
   CalculationMode,
   FeeBasis,
@@ -100,6 +103,10 @@ export function ProfitCalculator() {
   const [input, setInput] = useState<ProfitInput>(DEFAULT_PROFIT_INPUT);
   const [manualOverrides, setManualOverrides] = useState<Set<FeeInputKey>>(() => new Set());
   const [feesConfirmed, setFeesConfirmed] = useState(true);
+  const [isExample, setIsExample] = useState(true);
+  const [acknowledgedZeroCosts, setAcknowledgedZeroCosts] = useState<ReadinessCheckId[]>([]);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   const categories = getCategories(platformId);
   const resolvedPreset = useMemo(
@@ -116,8 +123,9 @@ export function ProfitCalculator() {
     () => assessCalculationReadiness(input, {
       feeVerificationRequired: resolvedPreset.preset.verificationRequired,
       feesConfirmed,
+      acknowledgedZeroCosts,
     }),
-    [feesConfirmed, input, resolvedPreset.preset.verificationRequired],
+    [feesConfirmed, input, resolvedPreset.preset.verificationRequired, acknowledgedZeroCosts],
   );
   const currencySymbol = CURRENCY_SYMBOLS.CNY;
   const activeAdvancedCount = (
@@ -156,11 +164,20 @@ export function ProfitCalculator() {
   ).filter((value) => value > 0).length;
 
   function updateInput(key: ProfitInputKey, value: number, trackOverride = false) {
+    if (isExample) setFeesConfirmed(false);
+    setIsExample(false);
     setInput((current) => ({ ...current, [key]: value }));
+    const areas: Partial<Record<ProfitInputKey, ReadinessCheckId>> = {
+      productCost: "product", fulfillmentCost: "fulfillment", packagingCost: "order-costs",
+      otherFixedCost: "order-costs", insuranceCost: "order-costs", advertisingCost: "acquisition",
+      creatorCommissionRate: "acquisition", creatorCommissionFixed: "acquisition",
+      refundLossRate: "after-sales", returnRate: "after-sales", returnShippingCost: "after-sales",
+      returnHandlingCost: "after-sales", returnValueLossRate: "after-sales", nonRefundableFeeRate: "after-sales", taxRate: "tax",
+    };
+    setAcknowledgedZeroCosts((current) => current.filter((area) => area !== areas[key]));
     if (trackOverride && FEE_KEYS.includes(key as FeeInputKey)) {
       setManualOverrides((current) => new Set(current).add(key as FeeInputKey));
       if (
-        resolvedPreset.preset.verificationRequired &&
         FEE_VERIFICATION_KEYS.includes(key as FeeInputKey)
       ) {
         setFeesConfirmed(false);
@@ -169,10 +186,17 @@ export function ProfitCalculator() {
   }
 
   function updateCalculationMode(calculationMode: CalculationMode) {
+    setIsExample(false);
+    setFeesConfirmed(false);
+    setAcknowledgedZeroCosts([]);
+    setAdvancedOpen(calculationMode === "professional");
     setInput((current) => ({ ...current, calculationMode }));
   }
 
   function updateSalesChannel(salesChannel: SalesChannel) {
+    setIsExample(false);
+    setFeesConfirmed(false);
+    setAcknowledgedZeroCosts((current) => current.filter((id) => id !== "acquisition"));
     setInput((current) => ({ ...current, salesChannel }));
   }
 
@@ -180,10 +204,14 @@ export function ProfitCalculator() {
     key: "platformFeeBase" | "paymentFeeBase" | "creatorCommissionBase" | "taxFeeBase",
     value: FeeBasis,
   ) {
+    setIsExample(false);
+    setFeesConfirmed(false);
     setInput((current) => ({ ...current, [key]: value }));
   }
 
   function applyPreset(nextPlatformId: PlatformId, nextCategoryId: CategoryId) {
+    setIsExample(false);
+    setAcknowledgedZeroCosts([]);
     const { preset } = resolvePreset(nextPlatformId, nextCategoryId);
     const template = getProfessionalTemplate(nextPlatformId);
     setInput((current) => ({
@@ -201,7 +229,7 @@ export function ProfitCalculator() {
       refundLossRate: preset.refundLossRate,
     }));
     setManualOverrides(new Set());
-    setFeesConfirmed(!preset.verificationRequired);
+    setFeesConfirmed(false);
   }
 
   function handlePlatformChange(nextPlatformId: PlatformId) {
@@ -221,11 +249,40 @@ export function ProfitCalculator() {
     setInput(DEFAULT_PROFIT_INPUT);
     setManualOverrides(new Set());
     setFeesConfirmed(true);
+    setIsExample(true);
+    setAcknowledgedZeroCosts([]);
+    setAdvancedOpen(false);
+    setRevision((current) => current + 1);
+  }
+
+  function startPersonalPlan() {
+    const empty = Object.fromEntries(Object.entries(DEFAULT_PROFIT_INPUT).map(([key, value]) => [key, typeof value === "number" ? 0 : value])) as unknown as ProfitInput;
+    setInput({ ...empty, targetMarginRate: 20, monthlyOrders: 100 });
+    setIsExample(false);
+    setFeesConfirmed(false);
+    setAcknowledgedZeroCosts([]);
+    setManualOverrides(new Set());
+    setRevision((current) => current + 1);
+  }
+
+  function restoreScenario(plan: SavedScenario) {
+    const current = isScenarioCurrent(plan);
+    setPlatformId(plan.platformId);
+    setCategoryId(plan.categoryId);
+    setInput({ ...plan.input });
+    setFeesConfirmed(current && plan.feesConfirmed);
+    setAcknowledgedZeroCosts(current ? plan.acknowledgedZeroCosts : []);
+    setManualOverrides(new Set(plan.manualOverrides.filter((key): key is FeeInputKey => FEE_KEYS.includes(key as FeeInputKey))));
+    setIsExample(plan.isExample);
+    setAdvancedOpen(plan.input.calculationMode === "professional");
+    setRevision((currentRevision) => currentRevision + 1);
   }
 
   return (
+    <>
+    <Suspense fallback={null}><PlatformHandoff onSelect={handlePlatformChange} /></Suspense>
     <section className="calculator-grid" aria-label="电商利润计算器">
-      <article className="input-panel">
+      <article className="input-panel" id="calculator-inputs" key={revision}>
         <header className="tool-panel__header">
           <div>
             <p className="panel-kicker">填写一笔订单</p>
@@ -247,6 +304,30 @@ export function ProfitCalculator() {
             </button>
           </div>
         </header>
+
+        <div className="plan-start">
+          {isExample ? <><span>正在查看示例，金额与费率不代表你的店铺。</span><button type="button" onClick={startPersonalPlan}>填写我的商品</button></> : <><span>修改售价或成本，结果即时更新。</span><a href="#saved-plans">保存与对比 ↓</a></>}
+        </div>
+            <div className="calculation-mode" aria-label="核算模式">
+              <span>核算模式</span>
+              <div role="group" aria-label="选择核算模式">
+                <button
+                  type="button"
+                  aria-pressed={input.calculationMode === "quick"}
+                  onClick={() => updateCalculationMode("quick")}
+                >
+                  快速估算
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={input.calculationMode === "professional"}
+                  onClick={() => updateCalculationMode("professional")}
+                >
+                  专业核算
+                </button>
+              </div>
+            </div>
+        <p className="mode-help">{input.calculationMode === "quick" ? "先填售价和核心成本，快速看利润空间。" : "按每笔发出订单核算，包含退货回收与月费分摊。"}</p>
 
         <div className="selector-grid">
           <div className="select-field">
@@ -336,28 +417,26 @@ export function ProfitCalculator() {
           <div>
             <span>费率状态</span>
             <strong className={readiness.needsFeeVerification ? "verification-required" : undefined}>
-              {resolvedPreset.preset.verificationRequired
-                ? feesConfirmed ? "已自行核对" : "待核对"
-                : "通用估算"}
+              {isExample ? "示例假设" : feesConfirmed ? "已自行核对" : "待核对"}
             </strong>
           </div>
           <small>
-            {readiness.needsFeeVerification
+            {!isExample && readiness.needsFeeVerification
               ? "当前 0 费率不代表免佣，请在高级设置填入后台或合同费率"
               : resolvedPreset.preset.verificationRequired
                 ? "按你确认的费用估算，平台规则变化后请重新核对"
               : resolvedPreset.resolution === "category"
                 ? "已应用类目参考"
-                : "使用通用经营假设"}
+                : `通用假设：支付${input.paymentFeeRate}%、退款预留${input.refundLossRate}%，请按实际修改`}
           </small>
         </div>
 
-        {resolvedPreset.preset.verificationRequired ? (
+        {!isExample ? (
           <label className="fee-confirmation">
             <input
               type="checkbox"
               checked={feesConfirmed}
-              onChange={(event) => setFeesConfirmed(event.target.checked)}
+              onChange={(event) => { setFeesConfirmed(event.target.checked); setIsExample(false); }}
             />
             <span>
               <strong>我已按后台或合同核对当前费用</strong>
@@ -366,7 +445,7 @@ export function ProfitCalculator() {
           </label>
         ) : null}
 
-        <details className="advanced-settings">
+        <details className="advanced-settings" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
           <summary>
             <span>
               高级设置
@@ -376,25 +455,7 @@ export function ProfitCalculator() {
           </summary>
 
           <div className="advanced-settings__body">
-            <div className="calculation-mode" aria-label="核算模式">
-              <span>核算模式</span>
-              <div role="group" aria-label="选择核算模式">
-                <button
-                  type="button"
-                  aria-pressed={input.calculationMode === "quick"}
-                  onClick={() => updateCalculationMode("quick")}
-                >
-                  快速估算
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={input.calculationMode === "professional"}
-                  onClick={() => updateCalculationMode("professional")}
-                >
-                  专业核算
-                </button>
-              </div>
-            </div>
+
 
             {input.calculationMode === "quick" ? (
               <>
@@ -507,6 +568,7 @@ export function ProfitCalculator() {
                     <h3 id="professional-return-title">售后风险</h3>
                     <small>03</small>
                   </div>
+                  <p className="mode-help">按发出订单统计全额退货；退款收入与可回收货品会一并扣回。暂不含部分退款。交易费不退比例对平台、支付和达人费用统一适用。</p>
                   <div className="advanced-grid">
                     <NumberField id="return-rate" label="预计退货率" suffix="%" value={input.returnRate} max={100} onChange={(value) => updateInput("returnRate", value)} />
                     <NumberField id="return-shipping" label="单次逆向运费" prefix={currencySymbol} value={input.returnShippingCost} onChange={(value) => updateInput("returnShippingCost", value)} />
@@ -524,7 +586,7 @@ export function ProfitCalculator() {
                   <div className="advanced-grid">
                     <NumberField id="monthly-platform-cost" label="平台 / 软件月费" prefix={currencySymbol} value={input.monthlyPlatformCost} onChange={(value) => updateInput("monthlyPlatformCost", value)} />
                     <NumberField id="monthly-operating-cost" label="运营固定月成本" prefix={currencySymbol} value={input.monthlyOperatingCost} onChange={(value) => updateInput("monthlyOperatingCost", value)} />
-                    <NumberField id="professional-monthly-orders" label="预计月订单" suffix="单" value={input.monthlyOrders} step={1} onChange={(value) => updateInput("monthlyOrders", value)} />
+                    <NumberField id="professional-monthly-orders" label="预计月订单" hint="专业模式按发出订单计数" suffix="单" value={input.monthlyOrders} step={1} onChange={(value) => updateInput("monthlyOrders", value)} />
                     <NumberField id="professional-target-margin" label="目标利润率" suffix="%" value={input.targetMarginRate} max={95} onChange={(value) => updateInput("targetMarginRate", value)} />
                   </div>
                 </section>
@@ -579,7 +641,10 @@ export function ProfitCalculator() {
         </details>
       </article>
 
-      <ResultPanel result={result} currency="CNY" readiness={readiness} />
+      <ResultPanel result={result} currency="CNY" readiness={readiness} isExample={isExample}
+        onAcknowledge={(id) => { setAcknowledgedZeroCosts((current) => [...current, id]); setIsExample(false); }} />
     </section>
+    <ScenarioWorkspace draft={{ platformId, categoryId, input, feesConfirmed, acknowledgedZeroCosts, manualOverrides: [...manualOverrides], isExample }} onRestore={restoreScenario} />
+    </>
   );
 }

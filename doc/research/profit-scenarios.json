@@ -1,0 +1,236 @@
+[
+  {
+    "id": "S01",
+    "title": "无退款基础订单",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60
+    },
+    "expected": {
+      "profit": 40
+    },
+    "basis": "100 - 60 = 40。"
+  },
+  {
+    "id": "S02",
+    "title": "优惠与直接费用",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "discount": 10,
+      "productCost": 60,
+      "fulfillmentCost": 5,
+      "packagingCost": 2,
+      "advertisingCost": 3
+    },
+    "expected": {
+      "profit": 20
+    },
+    "basis": "100 - 10 - 60 - 5 - 2 - 3 = 20。"
+  },
+  {
+    "id": "S03",
+    "title": "独立基数与补贴达人订单",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "discount": 10,
+      "buyerShipping": 5,
+      "platformSubsidy": 10,
+      "productCost": 40,
+      "fulfillmentCost": 8,
+      "platformFeeRate": 5,
+      "platformFeeBase": "item-amount",
+      "paymentFeeRate": 1,
+      "paymentFeeBase": "buyer-paid",
+      "salesChannel": "creator",
+      "creatorCommissionRate": 10,
+      "creatorCommissionBase": "seller-settlement",
+      "taxRate": 2,
+      "taxFeeBase": "seller-settlement"
+    },
+    "expected": {
+      "profit": 38.95
+    },
+    "basis": "结算收入105，成本40+8+90×5%+95×1%+105×10%+105×2%=66.05。所有费率为合成假设。"
+  },
+  {
+    "id": "S04",
+    "title": "自然成交不计隐藏达人费用",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "salesChannel": "organic",
+      "creatorCommissionRate": 20,
+      "creatorCommissionFixed": 1
+    },
+    "expected": {
+      "profit": 40,
+      "creatorCommission": 0
+    },
+    "basis": "自然成交不启用达人费用，100 - 60 = 40。"
+  },
+  {
+    "id": "S05",
+    "title": "月度固定成本分摊",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "monthlyPlatformCost": 300,
+      "monthlyOrders": 100
+    },
+    "expected": {
+      "profit": 37,
+      "monthlyProfit": 3700
+    },
+    "basis": "每单分摊300÷100=3，单笔37，月度3700。"
+  },
+  {
+    "id": "S06",
+    "title": "零订单仍发生固定成本",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "monthlyOperatingCost": 300,
+      "monthlyOrders": 0
+    },
+    "expected": {
+      "recurringCostAllocation": null,
+      "breakEvenItemPrice": null,
+      "monthlyProfit": -300
+    },
+    "basis": "零订单不能分摊；月收益为固定成本负值-300；反推不可用。"
+  },
+  {
+    "id": "S07",
+    "title": "收入全部作为交易费",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "platformFeeRate": 100
+    },
+    "expected": {
+      "profit": -60,
+      "breakEvenItemPrice": null,
+      "maximumAdvertisingCost": 0
+    },
+    "basis": "100 - 100 - 60 = -60，售价增加不能覆盖固定商品成本。"
+  },
+  {
+    "id": "S08",
+    "title": "价格反推与广告边界",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "targetMarginRate": 20
+    },
+    "expected": {
+      "breakEvenItemPrice": 60,
+      "targetItemPrice": 75,
+      "maximumAdvertisingCost": 40,
+      "breakEvenRoas": 2.5
+    },
+    "basis": "保本60；目标售价60÷(1-20%)=75；广告上限40；合成结算收入ROAS=100÷40。"
+  },
+  {
+    "id": "S09",
+    "title": "10%全额退款货品完整回收",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 10
+    },
+    "expected": {
+      "profit": 36
+    },
+    "basis": "每笔发出订单：90%×(100-60)=36，退款订单货品完整回收、无额外成本。"
+  },
+  {
+    "id": "S10",
+    "title": "退货仍发生正逆向物流",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 10,
+      "fulfillmentCost": 5,
+      "returnShippingCost": 2,
+      "returnHandlingCost": 1
+    },
+    "expected": {
+      "profit": 30.7
+    },
+    "basis": "每笔发出订单：90%×40 - 5 - 10%×(2+1)=30.7。"
+  },
+  {
+    "id": "S11",
+    "title": "全部退款且货品完整回收",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 100,
+      "fulfillmentCost": 5,
+      "returnShippingCost": 2
+    },
+    "expected": {
+      "profit": -7
+    },
+    "basis": "全部收入退回，货品完整回收，损失仅正逆向运费5+2=7。"
+  },
+  {
+    "id": "S12",
+    "title": "10%退款且退回货品全损",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 10,
+      "returnValueLossRate": 100
+    },
+    "expected": {
+      "profit": 30
+    },
+    "basis": "90%×40 - 10%×60 = 30。"
+  },
+  {
+    "id": "S13",
+    "title": "退款交易费全额不退",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 10,
+      "platformFeeRate": 5,
+      "nonRefundableFeeRate": 100
+    },
+    "expected": {
+      "profit": 31
+    },
+    "basis": "每笔发出订单：90%×40 - 5 = 31；每单5元交易费已发生且全额不退，只扣一次。"
+  },
+  {
+    "id": "S14",
+    "title": "退货与月成本联动",
+    "provenance": "synthetic",
+    "input": {
+      "itemPrice": 100,
+      "productCost": 60,
+      "returnRate": 10,
+      "monthlyOrders": 100,
+      "monthlyOperatingCost": 300
+    },
+    "expected": {
+      "profit": 33,
+      "monthlyProfit": 3300
+    },
+    "basis": "每单期望贡献36，减分摊3=33；100笔发出订单收益3600-300=3300。"
+  }
+]

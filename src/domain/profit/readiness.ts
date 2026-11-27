@@ -15,6 +15,7 @@ export interface ReadinessCheck {
   id: ReadinessCheckId;
   label: string;
   covered: boolean;
+  acknowledged?: boolean;
 }
 
 export interface CalculationReadiness {
@@ -28,11 +29,12 @@ export interface CalculationReadiness {
 interface ReadinessOptions {
   feeVerificationRequired: boolean;
   feesConfirmed: boolean;
+  acknowledgedZeroCosts?: readonly ReadinessCheckId[];
 }
 
 export function assessCalculationReadiness(
   input: ProfitInput,
-  { feeVerificationRequired, feesConfirmed }: ReadinessOptions,
+  { feeVerificationRequired, feesConfirmed, acknowledgedZeroCosts = [] }: ReadinessOptions,
 ): CalculationReadiness {
   const needsFeeVerification = feeVerificationRequired && !feesConfirmed;
   const isProfessional = input.calculationMode === "professional";
@@ -44,11 +46,6 @@ export function assessCalculationReadiness(
     input.paymentFeeRate > 0 ||
     input.paymentFixedFee > 0 ||
     (isProfessional && input.salesChannel === "creator" && hasCreatorFee);
-  const hasProfessionalReturnLoss =
-    input.returnShippingCost > 0 ||
-    input.returnHandlingCost > 0 ||
-    (input.productCost > 0 && input.returnValueLossRate > 0) ||
-    input.nonRefundableFeeRate > 0;
   const hasRecurringCosts = input.monthlyPlatformCost > 0 || input.monthlyOperatingCost > 0;
 
   const checks: ReadinessCheck[] = [
@@ -83,7 +80,7 @@ export function assessCalculationReadiness(
       id: "after-sales",
       label: isProfessional ? "退货 / 售后" : "退款 / 售后",
       covered: isProfessional
-        ? input.returnRate > 0 && hasProfessionalReturnLoss
+        ? input.returnRate > 0
         : input.refundLossRate > 0,
     },
     { id: "tax", label: "税费预留", covered: input.taxRate > 0 },
@@ -93,6 +90,14 @@ export function assessCalculationReadiness(
       covered: input.monthlyOrders > 0,
     },
   ];
+
+  for (const check of checks) {
+    // Fee verification and order volume cannot be replaced with a zero-cost tick.
+    if (!["revenue", "monthly-plan", "fees"].includes(check.id) && !check.covered && acknowledgedZeroCosts.includes(check.id)) {
+      check.covered = true;
+      check.acknowledged = true;
+    }
+  }
 
   const coveredCount = checks.filter((check) => check.covered).length;
 

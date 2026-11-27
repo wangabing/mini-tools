@@ -63,7 +63,11 @@ openspec/                产品规格、设计决策和变更记录
 - [开源项目调研](doc/ecommerce-profit-calculator-research.md)
 - [中国电商平台 Top 20 与成本规则调研](doc/china-ecommerce-platform-fee-research.md)
 - [产品改进与发展路线图](doc/product-improvement-roadmap.md)
+- [产品评审与阶段规划](doc/product-review-and-planning.md)
+- [公开证据验证方案与首轮结果](doc/public-evidence-validation.md)
 - [上线与持续运营待提供信息](doc/project-input-checklist.md)
+
+商家招募暂不可行时，可通过公开资料研究与独立案例推进工程验证。首轮证据及合成场景保存在 `doc/research/`；运行 `node scripts/audit-profit-scenarios.mjs` 可用当前领域引擎重新生成复算报告。当前14个案例中8个一致、6个存在退货口径差异，默认命令成功只表示审计完成；加 `--strict` 时，有差异将退出1。这些案例不是商家账单或用户反馈。
 
 ## 计算口径
 

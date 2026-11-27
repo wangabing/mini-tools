@@ -180,6 +180,91 @@ a {
   gap: 18px;
 }
 
+.plan-start,
+.scenario-heading,
+.scenario-save,
+.scenario-clear {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-start {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfb;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.plan-start button,
+.plan-start a,
+.platform-calculate {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.plan-start button,
+.scenario-save button {
+  border: 1px solid var(--teal);
+  border-radius: 4px;
+  background: var(--teal-soft);
+  padding: 6px 10px;
+}
+
+.mode-help {
+  margin: -8px 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.scenario-workspace {
+  width: min(calc(100% - 40px), var(--content));
+  margin: 18px auto 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.scenario-heading { align-items: flex-start; }
+.scenario-heading h2 { margin: 0 0 4px; font-size: 20px; }
+.scenario-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.scenario-save { margin-top: 16px; justify-content: flex-start; }
+.scenario-save label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.scenario-save input { min-width: 230px; border: 1px solid var(--line-strong); padding: 8px 10px; background: var(--paper); color: var(--carbon); }
+.scenario-privacy, .scenario-notice, .scenario-empty { color: var(--muted); font-size: 12px; }
+.scenario-notice { color: var(--teal); }
+.saved-plans-details { margin-top: 16px; border-top: 1px solid var(--line); }
+.saved-plans-details > summary { padding: 12px 0; cursor: pointer; font-weight: 700; }
+.saved-plans-details summary small { margin-left: 8px; color: var(--muted); font-weight: 400; }
+.saved-plan-list { display: grid; gap: 8px; }
+.saved-plan { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); }
+.saved-plan-select { display: flex; align-items: center; gap: 9px; }
+.saved-plan-select span, .saved-plan-amount { display: grid; gap: 2px; }
+.saved-plan small { color: var(--muted); font-size: 12px; }
+.saved-plan-amount { text-align: right; }
+.saved-plan-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.saved-plan-actions button, .scenario-clear button { border: 0; background: transparent; color: var(--indigo); font-size: 12px; cursor: pointer; }
+.danger-action { color: var(--coral) !important; }
+.scenario-comparison { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+.scenario-comparison h3 { margin: 0 0 12px; font-size: 16px; }
+.scenario-comparison h3 small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.scenario-comparison-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.scenario-comparison-grid article { padding: 14px; border-left: 3px solid var(--teal); background: var(--mineral); }
+.scenario-comparison-grid h4 { margin: 0; }
+.scenario-comparison-grid p { margin: 4px 0; color: var(--muted); font-size: 12px; }
+.scenario-comparison-grid dl { margin: 12px 0; }
+.scenario-comparison-grid dl > div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.scenario-comparison-grid dt { color: var(--muted); }
+.scenario-comparison-grid dd { margin: 0; font-weight: 700; }
+.scenario-comparison-grid details { color: var(--muted); font-size: 12px; }
+.zero-cost-checks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.zero-cost-checks button { border: 1px dashed var(--line-strong); border-radius: 3px; background: transparent; padding: 4px 7px; color: var(--muted); font-size: 11px; }
+.field-error { color: var(--coral) !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
 .input-panel,
 .result-panel {
   min-width: 0;
@@ -2402,6 +2487,13 @@ a {
 }
 
 @media (max-width: 540px) {
+  .scenario-workspace { width: min(calc(100% - 24px), var(--content)); padding: 16px; }
+  .scenario-heading, .scenario-save { align-items: stretch; flex-direction: column; }
+  .scenario-save input { min-width: 0; width: 100%; }
+  .saved-plan { grid-template-columns: minmax(0, 1fr) auto; }
+  .saved-plan-actions { grid-column: 1 / -1; justify-content: flex-start; border-top: 1px solid var(--line); padding-top: 8px; }
+  .scenario-comparison-grid { grid-template-columns: minmax(0, 1fr); }
+  .plan-start { align-items: flex-start; flex-direction: column; }
   .professional-settings .advanced-grid,
   .fee-rule__fields,
   .fee-rule__fields--two {

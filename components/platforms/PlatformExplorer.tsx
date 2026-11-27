@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   PLATFORM_GUIDES,
   SELLER_PATHS,
@@ -140,6 +141,7 @@ export function PlatformExplorer() {
                   <div><dt>成本重点</dt><dd>{platform.costModel}</dd></div>
                 </dl>
                 <p>{platform.selectionAdvice}</p>
+                <Link className="platform-calculate" href={`/?platform=${platform.id}`}>用{platform.name}测算 →</Link>
               </article>
             ))}
           </div>
@@ -220,6 +222,7 @@ export function PlatformExplorer() {
                     <section>
                       <h4>选择建议</h4>
                       <p>{platform.selectionAdvice}</p>
+                <Link className="platform-calculate" href={`/?platform=${platform.id}`}>用{platform.name}测算 →</Link>
                     </section>
                     <section className="platform-signal">
                       <h4>近期经营信号</h4>
@@ -229,6 +232,7 @@ export function PlatformExplorer() {
                     <section className="platform-benefit">
                       <h4>活动与权益入口</h4>
                       <p>{platform.benefitNote}</p>
+                      <Link className="platform-calculate" href={`/?platform=${platform.id}`}>用此平台测算 →</Link>
                       <a href={platform.officialUrl} target="_blank" rel="noreferrer">
                         {platform.officialLabel}
                         <ExternalLink size={14} aria-hidden="true" />

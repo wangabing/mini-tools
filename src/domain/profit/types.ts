@@ -66,6 +66,8 @@ export interface ProfitResult {
   itemAmount: number;
   buyerPaid: number;
   sellerSettlement: number;
+  expectedRevenue: number;
+  contributionBeforeOverhead: number;
   platformFee: number;
   paymentFee: number;
   creatorCommission: number;
