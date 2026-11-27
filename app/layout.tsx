@@ -1,53 +1,19 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SiteHeader } from "@/components/SiteHeader";
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/src/config/brand";
 import { getSiteUrl } from "@/src/config/site";
 
-const siteUrl = getSiteUrl();
-const siteOrigin = new URL(siteUrl).origin;
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteOrigin),
-  title: {
-    default: "电商利润计算器 | 利衡",
-    template: "%s | 利衡",
-  },
-  description:
-    "免费估算电商订单贡献利润、贡献利润率、保本售价、广告空间和目标售价，并提示尚待确认的经营成本。",
-  applicationName: "利衡电商利润计算器",
-  alternates: { canonical: siteUrl },
-  openGraph: {
-    type: "website",
-    locale: "zh_CN",
-    siteName: "利衡",
-    title: "电商利润计算器 | 利衡",
-    description: "用简单输入，估算一笔订单的贡献利润与经营边界。",
-    url: siteUrl,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "电商利润计算器 | 利衡",
-    description: "用简单输入，估算一笔订单的贡献利润与经营边界。",
-  },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: "#f4f7f5",
-  colorScheme: "light",
+  metadataBase: new URL(new URL(getSiteUrl()).origin),
+  title: { default: BRAND_NAME, template: `%s | ${BRAND_NAME}` },
+  applicationName: BRAND_NAME,
+  description: BRAND_DESCRIPTION,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
-      </body>
+      <body style={{ margin: 0 }}>{children}</body>
     </html>
   );
 }

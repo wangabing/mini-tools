@@ -1,186 +1,51 @@
-# GitHub Pages 部署与运维文档
+# 小站工具部署与运维
 
-> 版本：3.0  
-> 更新日期：2026-10-04  
-> 当前方案：Next.js 静态导出 + GitHub Actions + GitHub Pages
+## 发布流程
 
-## 1. 当前部署方式
+Next.js 生成 `out/` 静态站点。GitHub Actions 读取 Pages 的公开地址，构建并上传静态产物。推送到 `main` 会触发发布，也可以手动运行 [Deploy to GitHub Pages](../.github/workflows/deploy-pages.yml)。执行发布前，请先确认要上线的提交。
 
-网站不需要云主机、后端进程、数据库或第三方表单服务。GitHub Actions 在每次推送到 `main` 后执行 `next build`，把生成的 `out/` 静态文件发布到 GitHub Pages。
+| 地址 | 构建路径前缀 |
+| --- | --- |
+| `https://tool.xiaozhan.info/` | 根路径 |
+| `https://wangabing.github.io/mini-tools/` | `/mini-tools` |
 
-```text
-推送 main
-  -> GitHub Actions 构建 out/
-  -> GitHub Pages 发布 HTML / CSS / JavaScript
-  -> 浏览器本地完成利润计算
-```
+仓库 **Settings → Pages → Build and deployment** 的 **Source** 使用 **GitHub Actions**。工作流依次执行 `npm ci`、`npm run build` 和 Pages 部署。构建前会从依赖包复制 PDF.js 的 worker、字体、字符映射和 WebAssembly 到静态资源目录。
 
-联系页只公开 `mrwbz@sina.com`。点击邮箱会打开访客设备上的邮件应用，网站不接收或转发邮件内容。
+## 本地预览
 
-首次上线可以先使用：
-
-```text
-https://wangabing.github.io/mini-tools/
-```
-
-正式地址为 `https://tool.xiaozhan.info/`。域名通过阿里云 DNS 解析到同一站点，整个过程只需要 GitHub 和阿里云提供的 DNS 管理功能。
-
-## 2. 上线前准备
-
-需要：
-
-- 能管理仓库 `wangabing/mini-tools` 的 GitHub 账号。
-- Node.js 20.19 或更高版本，用于本地检查。
-- 已完成实名认证和审核的域名 `xiaozhan.info`。
-
-发布前在项目根目录执行：
+使用 Node.js 20.19 或更高版本。
 
 ```bash
 npm ci
 npm run lint
 npm run typecheck
 npm test
-npm run build
+GITHUB_PAGES=true NEXT_PUBLIC_SITE_URL=https://tool.xiaozhan.info npm run build
+python3 -m http.server 4173 --bind 127.0.0.1 --directory out
 ```
 
-`npm run build` 会直接生成 `out/`，不需要运行 `next start`。`out/` 是构建产物，不提交到 Git。
+打开 <http://127.0.0.1:4173/>。如需检查 GitHub 默认项目路径的资源前缀，把 `NEXT_PUBLIC_SITE_URL` 改为 `https://wangabing.github.io/mini-tools` 重新构建。该产物需要挂载到 `/mini-tools/` 才能正常浏览。
 
-## 3. 首次发布到 GitHub Pages
+## 域名和 HTTPS
 
-仓库已经包含 `.github/workflows/deploy-pages.yml`，无需手工上传 `out/`。
+- 在 GitHub 账号的 **Settings → Pages** 中查看 `xiaozhan.info` 的归属验证。首次配置时，将 GitHub 提供的 TXT 记录加到域名的 DNS 解析并完成验证，随后保留记录。
+- 在仓库的 **Settings → Pages → Custom domain** 中确认 `tool.xiaozhan.info`。阿里云 DNS 的 `tool` CNAME 指向 `wangabing.github.io`。
+- 域名或公开路径发生变化时，重新运行部署工作流。Pages 通过 DNS 检查并签发证书后，启用 **Enforce HTTPS**。
 
-1. 打开 GitHub 仓库，进入 **Settings > Pages**。
-2. 在 **Build and deployment** 下，把 **Source** 设为 **GitHub Actions**。
-3. 把当前代码推送到 `main`；也可以进入 **Actions > Deploy to GitHub Pages**，选择 **Run workflow** 手动执行。
-4. 等待 `build` 和 `deploy` 两个任务完成。
-5. 回到 **Settings > Pages**，打开 GitHub 显示的站点地址。
+## 发布验收
 
-工作流会自动完成以下事情：
+1. 在 Pages 和 Actions 中确认本次部署的提交及站点地址，使用该地址打开首页并刷新 `/mergepdf/`、`/base64/` 和 `/unit/?active=length`。
+2. 在桌面及手机上检查百灵鸟图标、工具搜索、分类入口，以及站内跳转和返回。
+3. 用两份已知页数和顺序的 PDF 进行合并，确认下载正常。检查 PDF 转图片和 M3U8 站内示例，核对所需静态资源加载成功。
+4. 检查 `/robots.txt`、`/sitemap.xml` 和 `/icon.png`。站点地图应使用部署对应的域名及路径前缀。
+5. 通过自定义域名打开时检查证书、HTTPS 跳转和手机可访问性。记录部署提交、已验证地址及仍有问题的工具。
 
-- 使用锁定依赖执行 `npm ci`。
-- 从 GitHub Pages 读取当前公开地址。
-- 为项目站点自动设置 `/mini-tools` 路径前缀。
-- 生成静态 `out/` 并上传 Pages artifact。
-- 发布成功后在 Actions 页面显示公开地址。
+## 回滚
 
-GitHub Free 账号通常需要公开仓库才能使用 Pages；私有仓库是否可用取决于账号方案。
+出现发布回归时，对问题提交执行 `git revert`，将回滚提交按正常流程发布，再在公开地址复查问题场景。站点由静态文件组成，浏览器保存的本地设置不需要服务端迁移。
 
-## 4. 绑定 `tool.xiaozhan.info`
+## 参考
 
-### 4.1 验证域名归属
-
-为了防止域名被其他 GitHub 仓库占用，先在 GitHub 账号中验证域名：
-
-1. 打开 GitHub 头像菜单中的 **Settings > Pages**。
-2. 在 **Add a domain** 中填写根域名 `xiaozhan.info`。
-3. GitHub 会给出一条 TXT 记录名和值。
-4. 打开阿里云 **云解析 DNS > 权威域名解析 > xiaozhan.info > 解析设置**。
-5. 添加 TXT 记录：主机记录使用 GitHub 给出的前缀，通常是 `_github-pages-challenge-wangabing`；记录值使用 GitHub 生成的验证码；TTL 保持默认。
-6. DNS 生效后回到 GitHub，点击 **Verify**。
-
-保留这条 TXT 记录，不要在验证成功后删除。
-
-### 4.2 在仓库中登记自定义域名
-
-1. 打开仓库 **Settings > Pages**。
-2. 在 **Custom domain** 中填写 `tool.xiaozhan.info` 并保存。
-3. 此时 DNS 检查暂未通过是正常状态。
-
-先在 GitHub 登记自定义域名，再公开 CNAME 解析，可以降低子域名被错误占用的风险。
-
-### 4.3 在阿里云配置 CNAME
-
-在阿里云 `xiaozhan.info` 的解析设置中添加：
-
-| 类型 | 主机记录 | 记录值 |
-| --- | --- | --- |
-| CNAME | `tool` | `wangabing.github.io` |
-
-解析请求来源选择默认，TTL 使用默认值。若已经存在主机记录为 `tool` 的 A、AAAA 或 CNAME 记录，应先处理冲突。
-
-不要把 CNAME 指向 `wangabing.github.io/mini-tools`，DNS 记录值只能是主机名，不能包含仓库路径。
-
-### 4.4 完成 Pages 和 HTTPS 配置
-
-1. 等待 GitHub Pages 显示 **DNS check successful**。
-2. 进入 **Actions > Deploy to GitHub Pages**，手动重新运行工作流。
-3. 等待 GitHub 完成 HTTPS 证书签发。
-4. 证书可用后勾选 **Enforce HTTPS**。
-
-重新构建是必要的：默认项目地址位于 `/mini-tools/`，自定义域名位于 `/`。工作流读取自定义域名后会自动移除仓库路径前缀，并同步更新 canonical、分享地址、`robots.txt`、`sitemap.xml` 和 Web App Manifest。
-
-DNS 与证书生效可能需要数分钟到 24 小时。在此期间不要反复删除、重加域名设置。
-
-## 5. 发布验收
-
-每次首次发布或绑定域名后检查：
-
-- 首页、`/platforms/`、`/methodology/`、`/contact/`、`/privacy/` 和 `/terms/` 均可打开。
-- 刷新任意子页面不会出现 404。
-- 页面样式、图标、站内链接和浏览器后退正常。
-- `/manifest.webmanifest`、`/robots.txt` 和 `/sitemap.xml` 可以访问。
-- `sitemap.xml` 中的链接使用当前公开域名，且没有错误的 `/mini-tools` 前缀。
-- 联系页只显示邮箱，不出现在线留言输入框或发送按钮。
-- 修改计算器输入时，浏览器网络面板没有发送售价、成本、费率或利润结果。
-- 在 320px、390px 和桌面宽度下没有横向滚动或文字遮挡。
-- 自定义域名使用 HTTPS，HTTP 会跳转到 HTTPS。
-
-## 6. 本地模拟 Pages 构建
-
-模拟默认的 GitHub 项目站点：
-
-```bash
-GITHUB_PAGES=true \
-GITHUB_REPOSITORY=wangabing/mini-tools \
-NEXT_PUBLIC_SITE_URL=https://wangabing.github.io/mini-tools \
-npm run build
-```
-
-模拟自定义域名：
-
-```bash
-GITHUB_PAGES=true \
-GITHUB_REPOSITORY=wangabing/mini-tools \
-NEXT_PUBLIC_SITE_URL=https://tool.xiaozhan.info \
-npm run build
-```
-
-本地查看时，使用根路径构建，然后运行：
-
-```bash
-npm run build
-python3 -m http.server 4173 --directory out
-```
-
-然后打开 <http://localhost:4173>。上面的 GitHub 项目站点构建用于核对生成的 `/mini-tools` 资源前缀；普通文件服务器不会模拟 GitHub Pages 的仓库路径挂载，因此不要直接用它预览该构建。
-
-## 7. 日常发布与回滚
-
-日常发布只需把通过检查的代码推送到 `main`。同一分支连续推送时，工作流会按顺序部署，避免多个版本同时写入。
-
-新版本异常时：
-
-1. 在 Git 中创建一个撤销问题提交的新提交。
-2. 推送到 `main`，等待 Pages 工作流重新发布。
-3. 或在修复完成后，从 Actions 页面手动重新运行最近一次正确提交的工作流。
-
-当前站点没有数据库和服务端状态，回滚静态文件不会产生数据迁移问题。
-
-## 8. 当前能力边界
-
-- GitHub Pages 只能提供静态文件，不能运行 Next.js 服务端功能、API 路由或数据库。
-- 联系页的 `mailto:` 链接依赖访客设备已配置邮件应用；暂不提供站内发送能力。
-- 当前没有访问统计、广告请求、账号系统或用户数据采集。
-- GitHub Pages 有站点大小、带宽、构建频率和可接受用途限制。准备规模化推广或商业化前，应重新核对当时的官方条款与限额。
-- 面向中国大陆用户时，不同网络的访问速度和可达性可能波动；使用境内基础设施还涉及域名备案和相应合规要求。
-
-以后增加在线留言时，需要先准备自己的后端接口或其他明确选定的接收服务，并同时完成服务端校验、垃圾信息防护、限流、隐私说明、数据保留与删除策略。在这些条件完成前，不在静态页面中恢复留言表单。
-
-## 9. 官方参考
-
-- GitHub Pages 快速入门：<https://docs.github.com/pages/quickstart>
-- 使用 Actions 发布：<https://docs.github.com/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages>
-- 自定义域名配置：<https://docs.github.com/pages/configuring-a-custom-domain-for-your-github-pages-site>
-- 验证自定义域名：<https://docs.github.com/pages/configuring-a-custom-domain-for-your-github-pages-site/verifying-your-custom-domain-for-github-pages>
-- GitHub Pages 限制：<https://docs.github.com/pages/getting-started-with-github-pages/github-pages-limits>
-- Next.js 静态导出：<https://nextjs.org/docs/app/guides/static-exports>
+- [GitHub Actions 发布 Pages](https://docs.github.com/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+- [GitHub Pages 自定义域名](https://docs.github.com/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
+- [Next.js 静态导出](https://nextjs.org/docs/app/guides/static-exports)

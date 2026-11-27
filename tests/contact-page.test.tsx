@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import ContactPage from "@/app/contact/page";
+import ContactPage from "@/app/_liheng/contact/page";
 
 describe("contact page", () => {
   it("offers direct email without an online message form", () => {
