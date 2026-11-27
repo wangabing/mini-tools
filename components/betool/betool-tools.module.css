@@ -1,0 +1,181 @@
+.workbench {
+  margin: 32px 20px 0;
+}
+
+.workbench h1 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.panel {
+  padding: 16px;
+  border-radius: 16px;
+  background: white;
+}
+
+.workbench :is(textarea, input) {
+  display: block;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid #e0e0e6;
+  border-radius: 10px;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+
+.workbench textarea {
+  width: 100%;
+  min-height: 149px;
+  resize: vertical;
+}
+
+.workbench :is(input, textarea)::placeholder {
+  color: #aaa;
+}
+
+.workbench :is(input, textarea):focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(47 124 246 / 22%);
+}
+
+.workbench button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #e0e0e6;
+  border-radius: 10px;
+  background: white;
+  color: #3a4154;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workbench button[data-variant="primary"] {
+  border-color: #2976f5;
+  background: #2976f5;
+  color: white;
+}
+
+.workbench button[data-variant="danger"] {
+  border-color: #d22749;
+  background: #d22749;
+  color: white;
+}
+
+.workbench button:hover {
+  filter: brightness(0.96);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+
+.copyControl {
+  position: relative;
+  display: inline-flex;
+}
+
+.message {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + 6px);
+  right: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #30384b;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.message:empty {
+  padding: 0;
+}
+
+.urlCodec {
+  padding-bottom: 28px;
+}
+
+.urlCodec textarea,
+.uuid textarea {
+  min-height: 194px;
+}
+
+.urlResult {
+  padding: 12px;
+  background: #f0f1f3;
+}
+
+.base64Field + .base64Field {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e9eb;
+}
+
+.base64Field h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.base64Field .actions {
+  margin-bottom: 16px;
+}
+
+.base64Result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.uuid .actions {
+  margin-top: 0;
+}
+
+.uuid input {
+  width: 116px;
+}
+
+.error {
+  margin: 12px 0 0;
+  color: #b71534;
+}
+
+.description {
+  margin-top: 12px;
+}
+
+.description h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  font-size: 16px;
+}
+
+.description h2::before,
+.description h2::after {
+  height: 1px;
+  background: #e8e9eb;
+  content: "";
+}
+
+.description h2::before {
+  width: 26px;
+}
+
+.description h2::after {
+  flex: 1;
+}
+
+.description p {
+  margin: 0;
+  padding: 0 16px 16px;
+  color: #3a4154;
+}

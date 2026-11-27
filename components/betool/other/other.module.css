@@ -1,0 +1,282 @@
+.tool {
+  --line: #dbe5ec;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 8px;
+  background: white;
+}
+
+.tool h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.tool :is(label, form) {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.tool label {
+  font-weight: 600;
+}
+
+.tool :is(textarea, input:not([type="range"])) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+}
+
+.tool textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.tool input[type="color"] {
+  width: 64px;
+  min-height: 38px;
+  padding: 3px;
+  background: white;
+}
+
+.tool button {
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tool button:hover {
+  border-color: var(--accent);
+}
+
+.tool button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tool button.primary,
+.tool button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.tool p {
+  margin: 0;
+}
+
+.tool p[role="alert"] {
+  color: #ae243c;
+}
+
+.tool video {
+  width: min(100%, 980px);
+  background: #141a1d;
+}
+
+.actions,
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 12px;
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats,
+.formats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.stats > div,
+.formats > div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.stats dd,
+.formats dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.formats dd {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.timer,
+.calculatorDisplay output {
+  display: block;
+  color: #163b52;
+  font-size: 36px;
+  font-variant-numeric: tabular-nums;
+}
+
+.barrage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+}
+
+.barrage[open] {
+  display: grid;
+  align-items: center;
+}
+
+.barrage button {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  right: 16px;
+  color: #23343e;
+}
+
+.barrage span {
+  width: max-content;
+  padding-left: 100vw;
+  animation: marquee linear infinite;
+  white-space: nowrap;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-100%); }
+}
+
+.tool button.reaction {
+  width: 100%;
+  min-height: 230px;
+  background: #e7f5ff;
+  font-size: 20px;
+}
+
+.tool button.reaction[data-phase="waiting"],
+.tool button.reaction[data-phase="early"] {
+  background: #f8dce1;
+}
+
+.tool button.reaction[data-phase="ready"] {
+  background: #c9efcc;
+}
+
+.calculator {
+  width: min(100%, 370px);
+  margin: 0 auto;
+}
+
+.calculatorDisplay {
+  min-height: 100px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f3f8fb;
+  text-align: right;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.keypad button {
+  min-height: 50px;
+  font-size: 18px;
+}
+
+.keypad button[data-wide="true"] {
+  grid-column: span 2;
+}
+
+.paletteRows,
+.colorGrid,
+.emojiGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.paletteRows {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
+.paletteRow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+  border-radius: 7px;
+}
+
+.paletteRow button {
+  min-height: 85px;
+  border-radius: 0;
+  padding: 0;
+}
+
+.colorGrid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 138px), 1fr));
+}
+
+.colorGrid button {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.swatch {
+  height: 53px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.emojiGrid {
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+}
+
+.emojiGrid button {
+  padding-inline: 2px;
+}
+
+.emojiGrid button span {
+  display: block;
+  font-size: 28px;
+}

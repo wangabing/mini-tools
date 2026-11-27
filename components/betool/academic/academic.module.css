@@ -1,0 +1,412 @@
+.workbench {
+  min-width: 0;
+  color: var(--text, #26344a);
+}
+
+.panel {
+  padding: 16px;
+  margin: 0 0 16px;
+  border-radius: 16px;
+  background: white;
+}
+
+.workbench h2 {
+  margin: 12px 0 10px;
+  font-size: 16px;
+}
+
+.workbench p {
+  margin: 6px 0;
+}
+
+.workbench [role="alert"] {
+  color: #a32935;
+}
+
+.workbench label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.workbench :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #d4dce1;
+  border-radius: 8px;
+  color: inherit;
+  background: white;
+  font: inherit;
+}
+
+.workbench :is(input, select, textarea):focus-visible,
+.workbench button:focus-visible {
+  outline: 2px solid var(--accent, #286f75);
+  outline-offset: 2px;
+}
+
+.workbench textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+}
+
+.workbench input[type="number"] {
+  width: 12ch;
+}
+
+.workbench button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #d4dce1;
+  border-radius: 8px;
+  color: inherit;
+  background: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workbench button[disabled] {
+  opacity: .55;
+  cursor: default;
+}
+
+.workbench button[data-primary],
+.tabs button:is([aria-current], [aria-pressed="true"]) {
+  border-color: var(--accent, #286f75);
+  color: white;
+  background: var(--accent, #286f75);
+}
+
+.actions, .tabs, .line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.actions, .tabs {
+  margin: 12px 0;
+}
+
+.line {
+  flex-wrap: nowrap;
+}
+
+.line input {
+  width: 100%;
+}
+
+.line button {
+  flex: 0 0 auto;
+}
+
+.workbench label.check {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.copyStatus {
+  font-size: 13px;
+}
+
+.unitGroup {
+  min-width: 0;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #e0e5e9;
+  border-radius: 8px;
+}
+
+.unitGroup legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.unitGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: 12px;
+}
+
+.unitGrid label {
+  margin-bottom: 4px;
+}
+
+.tableWrap {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+
+.tableWrap :is(th, td) {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e7eb;
+  text-align: left;
+}
+
+.tableWrap thead {
+  background: #f2f5f5;
+}
+
+.tableWrap code {
+  overflow-wrap: anywhere;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.largeResult {
+  display: block;
+  min-height: 74px;
+  padding: 12px;
+  color: var(--accent, #286f75);
+  font-size: 34px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.coin {
+  display: grid;
+  width: 144px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 6px double #f9e1a1;
+  border-radius: 50%;
+  color: #513505;
+  background: #e8c16a;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.coin[data-moving="true"] {
+  animation: flip 580ms ease-out;
+}
+
+.dice {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.dice span {
+  display: grid;
+  width: 60px;
+  height: 64px;
+  place-items: center;
+  font-family: system-ui, sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--accent, #286f75);
+}
+
+.dice[data-moving="true"] span {
+  animation: roll 400ms ease-out;
+}
+
+.sum {
+  min-height: 26px;
+  color: var(--accent, #286f75);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.wheelWrap {
+  position: relative;
+  width: min(100%, 280px);
+  margin: 12px auto 0;
+}
+
+.pointer {
+  position: absolute;
+  z-index: 1;
+  top: -7px;
+  left: calc(50% - 9px);
+  width: 0;
+  height: 0;
+  border: 9px solid transparent;
+  border-top: 18px solid #253140;
+}
+
+.wheel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 4px solid #f2f5f5;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.wheel[data-moving="true"] {
+  transition: transform 2500ms cubic-bezier(.16, .82, .22, 1);
+}
+
+.wheelSegment {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 8%;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wheelSegment span {
+  max-width: 28%;
+  text-align: center;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.chartLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 325px);
+  gap: 16px;
+}
+
+.chartWork, .chartControls {
+  min-width: 0;
+}
+
+.chartControls {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid #e1e6e9;
+  border-radius: 8px;
+}
+
+.chartControls :is(details, .format) {
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid #e1e6e9;
+}
+
+.chartControls summary {
+  padding: 3px 1px;
+  cursor: pointer;
+}
+
+.format {
+  display: flex;
+  gap: 14px;
+}
+
+.chartControls > .actions {
+  margin: 0;
+}
+
+.chartControls .settings {
+  display: grid;
+  gap: 9px;
+  padding-top: 7px;
+}
+
+.chartControls .settings input[type="color"] {
+  width: 68px;
+}
+
+.chartPreview {
+  display: grid;
+  min-width: 0;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.chartPreview > div {
+  position: relative;
+}
+
+.chartPreview > div > div {
+  position: absolute;
+  inset: 0 auto auto 0;
+}
+
+.zoom {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.editor {
+  width: min(760px, calc(100% - 30px));
+  max-height: 85vh;
+  padding: 18px;
+  border: 1px solid #d4dce1;
+  border-radius: 10px;
+  color: inherit;
+  background: white;
+}
+
+.editor::backdrop {
+  background: #16263870;
+}
+
+.editor :is(th, td) {
+  padding: 5px;
+}
+
+.editor td input {
+  width: max(7ch, 100%);
+}
+
+@keyframes flip {
+  from { transform: rotateY(0); }
+  to { transform: rotateY(1080deg); }
+}
+
+@keyframes roll {
+  from { transform: rotate(-22deg) translateY(-8px); }
+  to { transform: rotate(0) translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .chartLayout, .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin[data-moving="true"], .dice[data-moving="true"] span {
+    animation: none;
+  }
+  .wheel[data-moving="true"] {
+    transition: none;
+  }
+}
