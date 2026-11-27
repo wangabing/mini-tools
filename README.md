@@ -31,6 +31,8 @@ npm run build
 | 需要了解 | 从这里开始 |
 | --- | --- |
 | 哪些功能已验证，和参考站有哪些差异 | [实现与验收基线](doc/betool-reference.md) |
+| 线上兼容性与 PDF 下载实测 | [线上兼容性验收](doc/online-compatibility.md) |
+| 国内外工具站有哪些可借鉴的设计 | [工具站对比](doc/tool-site-comparison.md) |
 | 下一轮做什么，怎么验收 | [迭代清单](doc/betool-roadmap.md) |
 | 新增或调整工具 | [目录数据](src/data/betool.ts)、[工具路由](app/(betool-tools)/)、[工具组件](components/betool/) |
 | 修改站名、口号或标志 | [品牌配置](src/config/brand.ts)、[百灵鸟图标](app/icon.png) |

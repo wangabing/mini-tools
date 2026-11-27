@@ -3,7 +3,16 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 
 export async function openPdf(file: File) {
   const { PDFDocument } = await import("pdf-lib");
-  return PDFDocument.load(await file.arrayBuffer());
+  try {
+    const document = await PDFDocument.load(await file.arrayBuffer());
+    if (!document.getPageCount()) throw new Error("PDF has no pages");
+    return document;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Input document to `PDFDocument.load` is encrypted.")) {
+      throw new Error(`「${file.name}」带有密码保护，请解锁后重试。`, { cause: error });
+    }
+    throw new Error(`无法读取「${file.name}」，请确认文件是有效的 PDF 且包含页面。`, { cause: error });
+  }
 }
 
 export async function mergePdfs(files: File[]) {

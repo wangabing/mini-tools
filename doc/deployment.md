@@ -9,7 +9,7 @@ Next.js 生成 `out/` 静态站点。GitHub Actions 读取 Pages 的公开地址
 | `https://tool.xiaozhan.info/` | 根路径 |
 | `https://wangabing.github.io/mini-tools/` | `/mini-tools` |
 
-仓库 **Settings → Pages → Build and deployment** 的 **Source** 使用 **GitHub Actions**。工作流依次执行 `npm ci`、`npm run build` 和 Pages 部署。构建前会从依赖包复制 PDF.js 的 worker、字体、字符映射和 WebAssembly 到静态资源目录。
+仓库 **Settings → Pages → Build and deployment** 的 **Source** 使用 **GitHub Actions**。工作流从 Pages 获取公开地址，Next.js 的导出和尾斜杠行为由 `next.config.ts` 统一配置。构建前会从依赖包复制 PDF.js 的 worker、字体、字符映射和 WebAssembly 到静态资源目录。
 
 ## 本地预览
 

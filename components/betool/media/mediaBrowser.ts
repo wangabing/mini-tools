@@ -51,7 +51,7 @@ export async function downloadZip(files: { name: string; data: Blob | Uint8Array
 }
 
 export function messageFor(error: unknown) {
-  if (error instanceof Error && /password|encrypt/i.test(error.message)) {
+  if (error instanceof Error && error.name === "PasswordException") {
     return "文件带有密码保护，请解锁后重试。";
   }
   return error instanceof Error ? error.message : "文件处理失败。";

@@ -3,7 +3,8 @@
 import { PDFDocument, StandardFonts, degrees } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { colorFormats } from "@/components/betool/media/imageBrowser";
-import { exportPdfPages, mergePdfs } from "@/components/betool/media/pdfBrowser";
+import { messageFor } from "@/components/betool/media/mediaBrowser";
+import { exportPdfPages, mergePdfs, openPdf } from "@/components/betool/media/pdfBrowser";
 
 async function pdfFixture(name: string, widths: number[]) {
   const document = await PDFDocument.create();
@@ -16,6 +17,16 @@ async function pdfFixture(name: string, widths: number[]) {
 }
 
 describe("PDF export", () => {
+  it("preserves a named file error and recognizes PDF.js password failures", () => {
+    const malformed = new Error("无法读取「encrypted.pdf」");
+    const secured = new Error("「encrypted.pdf」带有密码保护，请解锁后重试。");
+    expect(messageFor(malformed)).toBe(malformed.message);
+    expect(messageFor(secured)).toBe(secured.message);
+    const pdfJsFailure = new Error("No password given");
+    pdfJsFailure.name = "PasswordException";
+    expect(messageFor(pdfJsFailure)).toBe("文件带有密码保护，请解锁后重试。");
+  });
+
   it("merges every page in the supplied file order", async () => {
     const first = await pdfFixture("first", [180, 210]);
     const second = await pdfFixture("second", [250, 300]);
@@ -40,7 +51,18 @@ describe("PDF export", () => {
   it("rejects malformed PDF data", async () => {
     const invalid = new File(["invalid content"], "invalid.pdf", { type: "application/pdf" });
     const valid = await pdfFixture("valid", [180]);
-    await expect(mergePdfs([valid, invalid])).rejects.toThrow();
+    await expect(mergePdfs([valid, invalid])).rejects.toThrow("无法读取「invalid.pdf」");
+  });
+
+  it("identifies an encryption trailer and names the affected file", async () => {
+    const document = await PDFDocument.create();
+    document.addPage();
+    document.context.trailerInfo.Encrypt = document.context.register(
+      document.context.obj({ Filter: "Standard", V: 1, R: 2 }),
+    );
+    const bytes = await document.save({ useObjectStreams: false });
+    const file = new File([new Uint8Array(bytes)], "protected.pdf");
+    await expect(openPdf(file)).rejects.toThrow("「protected.pdf」带有密码保护");
   });
 });
 
